@@ -9,9 +9,13 @@ public class LoginAccountRequestValidator : AbstractValidator<LoginAccountReques
     public LoginAccountRequestValidator()
     {
         RuleFor(x => x.Username)
-            .NotEmpty();
+            .NotEmpty()
+            .WithMessage("Username cannot be empty!");
 
         RuleFor(x => x.Password)
-            .NotEmpty();
+            .NotEmpty()
+            .WithMessage("Password cannot be empty!")
+            .MinimumLength(12)
+            .WithMessage("Password cannot be less than 12 characters!");
     }
 }

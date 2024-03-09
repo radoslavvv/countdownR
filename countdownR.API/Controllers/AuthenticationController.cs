@@ -7,7 +7,6 @@ using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace countdownR.API.Controllers;
 
@@ -79,8 +78,6 @@ public class AuthenticationController : ControllerBase
             {
                 return BadRequest(message);
             }
-
-            //var accountDTO = new AccountDTO(registerAccountRequestDTO.Username, registerAccountRequestDTO.Email, message);
 
             return CreatedAtAction(nameof(Register), message);
         }

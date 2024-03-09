@@ -8,13 +8,19 @@ public class RegisterAccountRequestValidator : AbstractValidator<RegisterAccount
     public RegisterAccountRequestValidator()
     {
         RuleFor(x => x.Username)
-           .NotEmpty();
+           .NotEmpty()
+           .WithMessage("Username Address cannot be empty!"); ;
 
         RuleFor(x => x.Email)
-            .EmailAddress()
-           .NotEmpty();
+           .EmailAddress()
+           .WithMessage("Email Address is not valid!")
+           .NotEmpty()
+           .WithMessage("Email Address cannot be empty!");
 
         RuleFor(x => x.Password)
-            .NotEmpty();
+            .NotEmpty()
+            .WithMessage("Password cannot be empty!")
+            .MinimumLength(12)
+            .WithMessage("Password cannot be less than 12 characters!");
     }
 }

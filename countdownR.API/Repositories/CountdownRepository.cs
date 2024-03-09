@@ -58,7 +58,6 @@ public class CountdownRepository : ICountdownRepository
             countdowns = countdowns.Where(c=>c.AppUserId == userId);
         }
 
-
         return await countdowns.ToListAsync();
     }
 
