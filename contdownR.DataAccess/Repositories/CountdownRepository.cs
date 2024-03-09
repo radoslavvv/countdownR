@@ -1,6 +1,6 @@
-﻿using countdownR.API.Data;
-using countdownR.API.DTOs.Countdown;
-using countdownR.API.Entities;
+﻿using contdownR.DataAccess.DTOs.Countdown;
+using contdownR.DataAccess.Entities;
+using countdownR.API.Data;
 using countdownR.API.Repositories.Contracts;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,10 +15,8 @@ public class CountdownRepository : ICountdownRepository
         _context = context;
     }
 
-    public async Task<Countdown> CreateCountdownAsync(Countdown countdown, string? userId)
+    public async Task<Countdown> CreateCountdownAsync(Countdown countdown)
     {
-        countdown.AppUserId = userId;
-
         await _context.Countdowns.AddAsync(countdown);
         await _context.SaveChangesAsync();
 
@@ -50,19 +48,7 @@ public class CountdownRepository : ICountdownRepository
         return await _context.Countdowns.ToListAsync();
     }
 
-    public async Task<IEnumerable<Countdown>> GetUserCountdownsAsync(string? userId)
-    {
-        IQueryable<Countdown> countdowns = _context.Countdowns;
-        if (userId is not null)
-        {
-            countdowns = countdowns.Where(c=>c.AppUserId == userId);
-        }
-
-
-        return await countdowns.ToListAsync();
-    }
-
-    public async Task<Countdown?> UpdateCountdownAsync(int id, UpdateCountdownRequestDTO updateCountdownRequestDTO, string? userId)
+    public async Task<Countdown?> UpdateCountdownAsync(int id, UpdateCountdownRequestDTO updateCountdownRequestDTO)
     {
         Countdown? countdown = await _context.Countdowns.FirstOrDefaultAsync(c => c.Id == id);
 

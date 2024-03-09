@@ -2,7 +2,11 @@
 using countdownR.API.DTOs.Countdown;
 using countdownR.API.Entities;
 using countdownR.API.Repositories.Contracts;
+using FluentValidation;
+using FluentValidation.Results;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace countdownR.API.Controllers;
 
@@ -19,6 +23,7 @@ public class CountdownController : ControllerBase
         _mapper = mapper;
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> GetCountdowns()
     {
@@ -27,6 +32,16 @@ public class CountdownController : ControllerBase
         return Ok(countdowns);
     }
 
+    [AllowAnonymous]
+    [HttpGet("user/{userId}")]
+    public async Task<IActionResult> GetUserCountdowns(string userId)
+    {
+        IEnumerable<Countdown> countdowns = await _repository.GetUserCountdownsAsync(userId);
+
+        return Ok(countdowns);
+    }
+
+    [AllowAnonymous]
     [HttpGet("{id}")]
     public async Task<IActionResult> GetCountdownById([FromRoute] int id)
     {
@@ -40,36 +55,75 @@ public class CountdownController : ControllerBase
         return Ok(_mapper.Map<CountdownDTO>(countdown));
     }
 
+    [AllowAnonymous]
     [HttpPost("create")]
-    public async Task<IActionResult> CreateCountdown([FromBody] CreateCountdownRequestDTO createCountdownRequestDTO)
+    public async Task<IActionResult> CreateCountdown([FromBody] CreateCountdownRequestDTO createCountdownRequestDTO,
+        [FromServices] IValidator<CreateCountdownRequestDTO> validator)
     {
-        Countdown? createdCountdown = await _repository.CreateCountdownAsync(_mapper.Map<Countdown>(createCountdownRequestDTO));
+        ValidationResult validationResult = validator.Validate(createCountdownRequestDTO);
+
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(validationResult.Errors);
+        }
+
+        string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        Countdown? createdCountdown = await _repository.CreateCountdownAsync(_mapper.Map<Countdown>(createCountdownRequestDTO), userId);
 
         return CreatedAtAction(nameof(GetCountdownById), new { id = createdCountdown.Id }, _mapper.Map<CountdownDTO>(createdCountdown));
     }
 
+    [AllowAnonymous]
     [HttpPut("update/{id}")]
-    public async Task<IActionResult> UpdateCountdown([FromRoute] int id, [FromBody] UpdateCountdownRequestDTO updateCountdownRequestDTO)
+    public async Task<IActionResult> UpdateCountdown([FromRoute] int id, [FromBody] UpdateCountdownRequestDTO updateCountdownRequestDTO,
+         [FromServices] IValidator<UpdateCountdownRequestDTO> validator)
     {
-        Countdown? updatedCountdown = await _repository.UpdateCountdownAsync(id, updateCountdownRequestDTO);
+        ValidationResult validationResult = validator.Validate(updateCountdownRequestDTO);
 
-        if (updatedCountdown is null)
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(validationResult.Errors);
+        }
+
+        string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        Countdown? countdown = await _repository.GetCountdownByIdAsync(id);
+
+        if (countdown is null)
         {
             return NotFound();
         }
+
+        if(countdown.AppUserId is not null && countdown.AppUserId != userId)
+        {
+            return Unauthorized();
+        }
+
+        Countdown? updatedCountdown = await _repository.UpdateCountdownAsync(id, updateCountdownRequestDTO, userId);
 
         return Ok(_mapper.Map<CountdownDTO>(updatedCountdown));
     }
 
+    [AllowAnonymous]
     [HttpDelete("delete/{id}")]
     public async Task<IActionResult> DeleteCountdown([FromRoute] int id)
     {
-        Countdown? deletedCountdown = await _repository.DeleteCountdownAsync(id);
+        string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (deletedCountdown is null)
+        Countdown? countdown = await _repository.GetCountdownByIdAsync(id);
+
+        if (countdown is null)
         {
             return NotFound();
         }
+
+        if (countdown.AppUserId is not null && countdown.AppUserId != userId)
+        {
+            return Unauthorized();
+        }
+
+        Countdown? deletedCountdown = await _repository.DeleteCountdownAsync(id);
 
         return NoContent();
     }
